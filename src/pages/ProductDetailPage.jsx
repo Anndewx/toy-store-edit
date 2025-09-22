@@ -1,61 +1,99 @@
-// src/pages/ProductDetailPage.jsx
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { fetchProduct } from "../lib/api";
 import { useCart } from "../context/CartContext";
-
-const toImg = (u) => (u ? u.replace(/^\.\//, "/") : ""); // ./images/x.jpg -> /images/x.jpg
 
 export default function ProductDetailPage() {
   const { id } = useParams();
-  const nav = useNavigate();
   const { add } = useCart();
-
   const [p, setP] = useState(null);
+  const [qty, setQty] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
 
   useEffect(() => {
-    setLoading(true);
-    fetch(`/api/product.php?id=${id}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((data) => setP(data))
-      .catch(() => setP(null))
-      .finally(() => setLoading(false));
+    let alive = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const data = await fetchProduct(id);
+        if (alive) setP(data);
+      } catch {
+        setErr("ไม่พบสินค้า");
+        setP(null);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => (alive = false);
   }, [id]);
 
-  if (loading) return <div className="container">กำลังโหลด...</div>;
-  if (!p) return <div className="container">ไม่พบสินค้า</div>;
+  if (loading) return <div className="container py-4">กำลังโหลด…</div>;
+  if (!p) return <div className="container py-4">{err || "ไม่พบสินค้า"}</div>;
+
+  const out = Number(p.stock) <= 0;
 
   return (
-    <div className="container">
-      <button className="btn-ghost" onClick={() => nav(-1)}>← กลับ</button>
-
-      <div className="pd-grid">
-        <div className="pd-img">
-          <img src={toImg(p.image_url)} alt={p.name} />
+    <div className="container py-4" style={{ maxWidth: 980 }}>
+      <div className="row g-4">
+        <div className="col-md-6">
+          <img
+            src={p.image_url}
+            alt={p.name}
+            className="img-fluid rounded"
+            style={{ width: "100%", objectFit: "cover" }}
+          />
+          <div className="mt-2 text-muted">คงเหลือในสต็อก: <strong>{p.stock}</strong></div>
         </div>
+        <div className="col-md-6">
+          <h2 className="mb-2">{p.name}</h2>
 
-        <div className="pd-info">
-          <h1>{p.name}</h1>
-          <p className="muted">{p.description}</p>
-          <div className="price">฿{Number(p.price).toFixed(2)}</div>
+          <div className="d-flex align-items-baseline gap-3 mb-3">
+            <span className="h4 text-dark">${Number(p.price).toFixed(2)}</span>
+            {p.original_price && (
+              <span className="text-muted text-decoration-line-through">
+                ${Number(p.original_price).toFixed(2)}
+              </span>
+            )}
+          </div>
 
-          <button className="btn-primary" onClick={() => add(p, 1)}>
-            เพิ่มลงตะกร้า
+          {p.description && <p className="mb-3">{p.description}</p>}
+
+          <div className="d-flex align-items-center gap-2 mb-3">
+            <button
+              className="btn btn-outline-dark"
+              onClick={() => setQty((q) => Math.max(1, q - 1))}
+              disabled={qty <= 1}
+            >-</button>
+            <input
+              type="number"
+              className="form-control"
+              style={{ width: 90 }}
+              min={1}
+              max={p.stock || 1}
+              value={qty}
+              onChange={(e) =>
+                setQty(
+                  Math.min(Math.max(1, Number(e.target.value) || 1), Number(p.stock) || 1)
+                )
+              }
+            />
+            <button
+              className="btn btn-outline-dark"
+              onClick={() => setQty((q) => Math.min((p.stock || 1), q + 1))}
+              disabled={qty >= (p.stock || 1)}
+            >+</button>
+          </div>
+
+          <button
+            className="btn btn-warning text-dark fw-bold"
+            disabled={out}
+            onClick={() => add(p.product_id, qty)}
+          >
+            {out ? "สินค้าหมด" : "เพิ่มลงตะกร้า"}
           </button>
         </div>
       </div>
-
-      <style>{`
-        .container{max-width:1200px;margin:0 auto;padding:24px 16px;}
-        .btn-ghost{border:1px solid #e5e7eb;background:#fff;border-radius:12px;padding:10px 14px;margin-bottom:16px}
-        .pd-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
-        .pd-img img{width:100%;max-height:520px;object-fit:contain;border-radius:16px;background:#fafafa}
-        .pd-info h1{font-size:2rem;margin:0 0 8px;font-weight:900}
-        .muted{color:#6b7280}
-        .price{font-size:1.5rem;font-weight:900;margin:12px 0}
-        .btn-primary{background:#ff8a00;color:#fff;border:none;border-radius:14px;padding:12px 18px;font-weight:800}
-        @media (max-width:900px){ .pd-grid{grid-template-columns:1fr} }
-      `}</style>
     </div>
   );
 }

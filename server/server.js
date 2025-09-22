@@ -85,7 +85,7 @@ app.post("/api/auth/register", async (req, res) => {
   }
 });
 
-// ★ login รองรับ username หรือ email
+// login รองรับ username หรือ email
 app.post("/api/auth/login", async (req, res) => {
   try {
     const { email, username, password } = req.body || {};
@@ -124,6 +124,25 @@ app.get("/api/products", async (_req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Failed to fetch products" });
+  }
+});
+
+// ✅ GET สินค้ารายตัว
+app.get("/api/products/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const [[row]] = await pool.query(
+      `SELECT product_id, category_id, name, description, price, original_price,
+              stock, image_url, on_sale
+       FROM products
+       WHERE product_id = ?`,
+      [id]
+    );
+    if (!row) return res.status(404).json({ error: "Product not found" });
+    res.json(row);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to fetch product" });
   }
 });
 
@@ -252,7 +271,7 @@ app.post("/api/orders", authOptional, async (req, res) => {
   }
 });
 
-// ★ Wallet: ลิสต์ออเดอร์
+// GET orders list
 app.get("/api/orders", authOptional, async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -267,7 +286,7 @@ app.get("/api/orders", authOptional, async (req, res) => {
   }
 });
 
-// ★ รายละเอียดออเดอร์
+// GET order detail
 app.get("/api/orders/:id", authOptional, async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -292,5 +311,6 @@ app.get("/api/orders/:id", authOptional, async (req, res) => {
   }
 });
 
-const PORT = Number(process.env.PORT) || 3006;
+// ===== เปลี่ยนให้ฟังพอร์ต 3001 =====
+const PORT = Number(process.env.PORT) || 3001;
 app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));

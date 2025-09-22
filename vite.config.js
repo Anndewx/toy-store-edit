@@ -1,18 +1,17 @@
-// vite.config.js
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+// vite.config.js — ถ้ายังไม่ได้ตั้ง ให้ใช้ชุดนี้
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
-// แมพ /api/* ของ Frontend -> http://localhost/toy_store_api/*
 export default defineConfig({
   plugins: [react()],
   server: {
+    port: 5173,          // หรือพอร์ตที่คุณใช้จริง
+    strictPort: true,
     proxy: {
-      "/api": {
-        target: "http://localhost",       // ✅ ชี้ไป Apache
+      '/api': {
+        target: 'http://localhost:3001', // Express backend
         changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/api/, "/toy_store_api"), // /api/x -> /toy_store_api/x
       },
     },
   },
-});
+})
