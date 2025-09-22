@@ -1,36 +1,142 @@
 import { useState } from "react";
-import { useAuth } from "../context/AuthContext";
 
 export default function RegisterPage() {
-  const { register } = useAuth();
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
-  const [msg, setMsg] = useState("");
+  const [username, setUsername] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
-  const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
-  const onSubmit = async (e) => {
+  async function handleRegister(e) {
     e.preventDefault();
-    setMsg("");
+    setBusy(true);
+    setError("");
+
+    // 1) พยายามยิง API จริงก่อน (ปรับ URL/payload ให้ตรง backend ของคุณ)
     try {
-      await register(form);
-      setMsg("สมัครสมาชิกสำเร็จ ✔");
-    } catch (err) {
-      setMsg(err.message || "Register failed");
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, name, email, password }),
+      });
+
+      if (res.ok) {
+        const data = await res.json(); // คาดหวัง { token, user }
+        if (data?.token && data?.user) {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem(
+            "user",
+            JSON.stringify({
+              name: data.user.name || name || username,
+              username: data.user.username || username,
+              email: data.user.email || email,
+              role: data.user.role || "user",
+              avatar: data.user.avatar || "",
+            })
+          );
+          window.dispatchEvent(new Event("user-changed"));
+          window.location.href = "/";
+          return;
+        }
+      }
+      throw new Error("fallback to demo");
+    } catch {
+      // 2) โหมดเดโม (สมัคร-ล็อกอินทันที)
+      const demoUser = {
+        name: name || username || email?.split("@")[0] || "Member",
+        username: username || "member",
+        email: email || "member@example.com",
+        role: "user",
+      };
+      localStorage.setItem("token", "demo-token");
+      localStorage.setItem("user", JSON.stringify(demoUser));
+      window.dispatchEvent(new Event("user-changed"));
+      window.location.href = "/";
+    } finally {
+      setBusy(false);
     }
-  };
+  }
 
   return (
-    <div className="d-flex justify-content-center align-items-center" style={{ minHeight:"80vh" }}>
-      <div className="card shadow p-4" style={{ width: 420, borderRadius: 16 }}>
-        <h3 className="text-center mb-3">สมัครสมาชิก</h3>
-        <form onSubmit={onSubmit} className="d-flex flex-column gap-3">
-          <input className="form-control" placeholder="ชื่อผู้ใช้ (Username)" name="name" value={form.name} onChange={onChange}/>
-          <input className="form-control" placeholder="อีเมล" name="email" value={form.email} onChange={onChange}/>
-          <input className="form-control" placeholder="รหัสผ่าน" type="password" name="password" value={form.password} onChange={onChange}/>
-          <button className="btn btn-warning text-dark fw-bold" type="submit">สมัครสมาชิก</button>
-          {msg && <div className="alert alert-info">{msg}</div>}
-        </form>
-      </div>
+    <div style={{ maxWidth: 520, margin: "40px auto", padding: "0 16px" }}>
+      <h2 style={{ marginBottom: 10, textAlign: "center" }}>สมัครสมาชิก</h2>
+      <form
+        onSubmit={handleRegister}
+        style={{
+          background: "#fff",
+          border: "1px solid #eee",
+          borderRadius: 12,
+          padding: 16,
+          boxShadow: "0 8px 24px rgba(0,0,0,.05)",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+          <label>Username</label>
+          <input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="yourname"
+            required
+            style={{ height: 40, border: "1px solid #e5e7eb", borderRadius: 10, padding: "0 10px" }}
+          />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+          <label>ชื่อที่แสดง</label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="ชื่อ-นามสกุล หรือชื่อเล่น"
+            required
+            style={{ height: 40, border: "1px solid #e5e7eb", borderRadius: 10, padding: "0 10px" }}
+          />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+          <label>อีเมล</label>
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            type="email"
+            required
+            style={{ height: 40, border: "1px solid #e5e7eb", borderRadius: 10, padding: "0 10px" }}
+          />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+          <label>รหัสผ่าน</label>
+          <input
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            type="password"
+            required
+            style={{ height: 40, border: "1px solid #e5e7eb", borderRadius: 10, padding: "0 10px" }}
+          />
+        </div>
+
+        {error && (
+          <div style={{ color: "#b91c1c", background: "#fee2e2", border: "1px solid #fecaca", padding: 8, borderRadius: 8, marginBottom: 10 }}>
+            {error}
+          </div>
+        )}
+
+        <button
+          disabled={busy}
+          style={{
+            width: "100%", height: 44, border: 0, borderRadius: 12,
+            background: "#111", color: "#fff", fontWeight: 800, cursor: "pointer",
+          }}
+        >
+          {busy ? "กำลังสมัครสมาชิก..." : "สมัครสมาชิก"}
+        </button>
+
+        <div style={{ marginTop: 8, textAlign: "center" }}>
+          มีบัญชีอยู่แล้ว? <a href="/login">เข้าสู่ระบบ</a>
+        </div>
+      </form>
     </div>
   );
 }

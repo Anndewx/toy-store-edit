@@ -15,6 +15,14 @@ export default function UserMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
+  // ฟัง event เมื่อ user login/logout
+  useEffect(() => {
+    const update = () => setUser(getUser());
+    window.addEventListener("user-changed", update);
+    return () => window.removeEventListener("user-changed", update);
+  }, []);
+
+  // ปิด dropdown เมื่อคลิกนอก
   useEffect(() => {
     const onClick = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
     window.addEventListener("click", onClick);
@@ -25,6 +33,7 @@ export default function UserMenu() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
+    window.dispatchEvent(new Event("user-changed")); // แจ้งทั่วแอป
     window.location.href = "/login";
   };
 
