@@ -1,0 +1,19 @@
+/* การ์ด + กริด */
+.grid-products{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:24px}
+.p-card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,.06)}
+.p-thumb{position:relative;aspect-ratio:4/3;overflow:hidden;display:block}
+.p-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.p-badges{position:absolute;top:10px;right:10px;display:flex;gap:6px}
+.badge{padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.15)}
+.badge-sale{background:linear-gradient(135deg,#ff6b6b,#fa5252)}
+.badge-hot{background:linear-gradient(135deg,#ff9f1a,#ff6a00)}
+.p-body{padding:14px}
+.p-title{margin:0 0 6px;font-size:16px}
+.p-title a{text-decoration:none;color:#111}
+.p-title a:hover{text-decoration:underline}
+.p-stock{color:#6b7280;font-size:13px;margin-bottom:6px}
+.p-price{display:flex;align-items:center;gap:10px;margin:8px 0 12px}
+.p-price .price{font-weight:800}
+.p-price .ori{color:#9ca3af;text-decoration:line-through}
+.btn-primary{width:100%;padding:10px 12px;background:#ffc107;border:0;border-radius:10px;font-weight:700;cursor:pointer}
+.btn-primary:hover{filter:brightness(.95)}

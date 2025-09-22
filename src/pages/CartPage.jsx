@@ -1,17 +1,21 @@
-import React from 'react';
-import { Typography, Box } from '@mui/material';
+import { useCart } from "../context/CartContext";
 
-function CartPage() {
+export default function CartPage() {
+  const { cart, remove } = useCart();
+
   return (
-    <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        ตะกร้าสินค้าของคุณ
-      </Typography>
-      <Typography variant="body1">
-        ตอนนี้ยังไม่มีสินค้าในตะกร้า
-      </Typography>
-    </Box>
+    <div className="container-narrow">
+      <h2>ตะกร้าสินค้า</h2>
+      {cart.length === 0 ? (
+        <p>ยังไม่มีสินค้าในตะกร้า</p>
+      ) : (
+        cart.map((c) => (
+          <div key={c.product_id}>
+            {c.name} x {c.qty}
+            <button onClick={() => remove(c.product_id)}>ลบ</button>
+          </div>
+        ))
+      )}
+    </div>
   );
 }
-
-export default CartPage;

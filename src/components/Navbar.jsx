@@ -1,67 +1,62 @@
+import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import "./Navbar.css";
+import { useCart } from "../context/CartContext";
+import UserMenu from "./UserMenu"; // 👈 เมนูโปรไฟล์ใหม่
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { count } = useCart();
+  const [open, setOpen] = useState(false);
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark" style={{ background: "#000" }}>
-      <div className="container">
-        <Link className="navbar-brand fw-bold text-warning" to="/">🛒 ToyStore</Link>
+    <header className="nb">
+      <div className="nb__inner">
+        <Link to="/" className="nb__brand">🛒 ToyStore</Link>
 
-        <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
-          <span className="navbar-toggler-icon"></span>
-        </button>
+        <nav className="nb__nav">
+          <ul className="nb__menu">
+            <li><NavLink to="/" end className="nb__link">Home</NavLink></li>
 
-        <div className="collapse navbar-collapse" id="mainNav">
-          <ul className="navbar-nav me-auto">
-            <li className="nav-item"><NavLink className="nav-link" to="/">Home</NavLink></li>
-
-            <li className="nav-item dropdown">
-              <a className="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown">Shop</a>
-              <ul className="dropdown-menu">
-                <li><NavLink className="dropdown-item" to="/category/gundam">Gundam</NavLink></li>
-                <li><NavLink className="dropdown-item" to="/category/anime">Anime</NavLink></li>
-                <li><NavLink className="dropdown-item" to="/category/superhero">Superhero</NavLink></li>
-                <li><NavLink className="dropdown-item" to="/category/game">Game</NavLink></li>
-              </ul>
+            {/* Shop dropdown */}
+            <li
+              className="nb__dropdown"
+              onMouseEnter={() => setOpen(true)}
+              onMouseLeave={() => setOpen(false)}
+            >
+              <span className="nb__link nb__toggle">Shop ▾</span>
+              {open && (
+                <div className="nb__drop">
+                  <Link to="/category/gundam" className="nb__dropItem">Gundam</Link>
+                  <Link to="/category/anime" className="nb__dropItem">Anime</Link>
+                  <Link to="/category/superhero" className="nb__dropItem">Superhero</Link>
+                  <Link to="/category/game" className="nb__dropItem">Game</Link>
+                  <div className="nb__divider" />
+                  <Link to="/category/new" className="nb__dropItem">New Arrivals</Link>
+                  <Link to="/category/hot" className="nb__dropItem">Hot</Link>
+                </div>
+              )}
             </li>
 
-            <li className="nav-item"><NavLink className="nav-link" to="/about">About</NavLink></li>
-            <li className="nav-item"><NavLink className="nav-link" to="/dashboard">Dashboard</NavLink></li>
-            <li className="nav-item"><NavLink className="nav-link" to="/wallet">Wallet</NavLink></li>
+            <li><NavLink to="/about" className="nb__link">About</NavLink></li>
+            <li><NavLink to="/dashboard" className="nb__link">Dashboard</NavLink></li>
+            <li><NavLink to="/wallet" className="nb__link">Wallet</NavLink></li>
           </ul>
+        </nav>
 
-          <ul className="navbar-nav ms-auto align-items-center">
-            {!user ? (
-              <>
-                <li className="nav-item"><NavLink className="nav-link" to="/login">Login</NavLink></li>
-                <li className="nav-item"><NavLink className="nav-link" to="/register">Register</NavLink></li>
-              </>
-            ) : (
-              <li className="nav-item dropdown">
-                <a className="nav-link dropdown-toggle d-flex align-items-center" role="button" data-bs-toggle="dropdown">
-                  <span style={{ fontSize: 22, marginRight: 8 }}>😺</span>
-                  <span>{user.name}</span>
-                </a>
-                <ul className="dropdown-menu dropdown-menu-end">
-                  <li className="dropdown-item-text"><strong>{user.name}</strong></li>
-                  <li className="dropdown-item-text text-muted">{user.email}</li>
-                  <li><hr className="dropdown-divider" /></li>
-                  <li><Link className="dropdown-item" to="/wallet">Wallet</Link></li>
-                  <li><button className="dropdown-item text-danger" onClick={logout}>Logout</button></li>
-                </ul>
-              </li>
-            )}
+        <div className="nb__right">
+          {/* ปุ่ม Cart */}
+          <button
+            className="nb__cart"
+            onClick={() => window.dispatchEvent(new CustomEvent("open-cart"))}
+          >
+            Cart
+            {count > 0 && <span className="nb__badge">{count}</span>}
+          </button>
 
-            <li className="nav-item">
-              <button className="btn btn-warning text-dark ms-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#cartDrawer">
-                Cart
-              </button>
-            </li>
-          </ul>
+          {/* เมนูโปรไฟล์ */}
+          <UserMenu />
         </div>
       </div>
-    </nav>
+    </header>
   );
 }

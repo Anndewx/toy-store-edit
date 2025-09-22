@@ -1,56 +1,66 @@
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useCart } from "../context/CartContext";
+import "./CartDrawer.css";
 
 export default function CartDrawer() {
-  const nav = useNavigate();
-  const { items = [], subtotal = 0, updateQty, remove, clear } = useCart();
+  const { items, subtotal, remove, updateQty, clear } = useCart();
+  const [open, setOpen] = useState(false);
 
-  const inc = (id, q) => updateQty?.(id, q + 1);
-  const dec = (id, q) => updateQty?.(id, Math.max(1, q - 1));
+  // ฟัง event จาก Navbar
+  useEffect(() => {
+    const openFn = () => setOpen(true);
+    window.addEventListener("open-cart", openFn);
+    return () => window.removeEventListener("open-cart", openFn);
+  }, []);
+
+  // ปิดด้วย ESC
+  useEffect(() => {
+    const onKey = (e) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  if (!open) return null;
 
   return (
-    <div className="offcanvas offcanvas-end" tabIndex="-1" id="cartDrawer">
-      <div className="offcanvas-header">
-        <h5 className="offcanvas-title">ตะกร้าสินค้า</h5>
-        <button className="btn-close" data-bs-dismiss="offcanvas"></button>
-      </div>
-      <div className="offcanvas-body d-flex flex-column">
-        {items.length === 0 ? (
-          <p className="text-muted">ตะกร้าว่าง</p>
-        ) : (
-          <ul className="list-group mb-3">
-            {items.map((it) => (
-              <li key={it.product_id} className="list-group-item d-flex justify-content-between align-items-center">
-                <div className="d-flex align-items-center gap-3">
-                  <img src={it.image_url} alt="" style={{ width: 48, height: 48, objectFit: "cover" }} />
-                  <div>
-                    <div>{it.name}</div>
-                    <div className="d-flex align-items-center gap-2">
-                      <button className="btn btn-sm btn-outline-dark" onClick={() => dec(it.product_id, it.quantity)}>-</button>
-                      <span>{it.quantity}</span>
-                      <button className="btn btn-sm btn-outline-dark" onClick={() => inc(it.product_id, it.quantity)}>+</button>
-                      <button className="btn btn-sm btn-link text-danger" onClick={() => remove?.(it.product_id)}>ลบ</button>
-                    </div>
-                  </div>
-                </div>
-                <div>${(it.price * it.quantity).toFixed(2)}</div>
-              </li>
-            ))}
-          </ul>
-        )}
+    <div className="cd__overlay" onClick={() => setOpen(false)}>
+      <aside className="cd" onClick={(e) => e.stopPropagation()}>
+        <header className="cd__h">
+          <b>ตะกร้าสินค้า</b>
+          <button onClick={() => setOpen(false)}>✕</button>
+        </header>
 
-        <div className="mt-auto">
-          <div className="d-flex justify-content-between fw-bold mb-2">
-            <span>รวม</span><span>${subtotal.toFixed(2)}</span>
-          </div>
-          <div className="d-flex gap-2">
-            <button className="btn btn-outline-secondary w-50" onClick={clear}>ล้างตะกร้า</button>
-            <button className="btn btn-warning text-dark w-50" data-bs-dismiss="offcanvas" onClick={() => nav("/checkout")}>
-              ไปชำระเงิน
-            </button>
-          </div>
+        <div className="cd__b">
+          {items.length === 0 ? (
+            <p>ยังไม่มีสินค้า</p>
+          ) : (
+            items.map(i => (
+              <div className="cd__row" key={i.product_id}>
+                <div className="cd__grow">
+                  <div className="cd__name">{i.name}</div>
+                  <div className="cd__muted">${Number(i.price).toFixed(2)} × {i.quantity}</div>
+                </div>
+                <div className="cd__qty">
+                  <button onClick={() => updateQty(i.product_id, Math.max(1, i.quantity - 1))}>−</button>
+                  <span>{i.quantity}</span>
+                  <button onClick={() => updateQty(i.product_id, i.quantity + 1)}>＋</button>
+                </div>
+                <button className="cd__link" onClick={() => remove(i.product_id)}>ลบ</button>
+              </div>
+            ))
+          )}
         </div>
-      </div>
+
+        <footer className="cd__f">
+          <div className="cd__sum">
+            <span>ยอดรวม</span><b>${subtotal.toFixed(2)}</b>
+          </div>
+          <div className="cd__actions">
+            <button className="ghost" onClick={clear}>ล้างตะกร้า</button>
+            <a className="primary" href="/checkout">ชำระเงิน</a>
+          </div>
+        </footer>
+      </aside>
     </div>
   );
 }

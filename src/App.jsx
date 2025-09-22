@@ -14,25 +14,41 @@ import DashboardPage from "./pages/DashboardPage";
 import WalletPage from "./pages/WalletPage";
 import OrderDetailPage from "./pages/OrderDetailPage";
 import CartDrawer from "./components/CartDrawer";
+import Checkout from "./pages/Checkout";
 
 export default function App() {
   return (
     <>
+      {/* Navbar จะมีปุ่ม Profile + Cart */}
       <Navbar />
+
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/search" element={<SearchPage />} />
+        {/* ✅ ใช้ /category/:slug สำหรับ Shop */}
         <Route path="/category/:slug" element={<CategoryPage />} />
+        {/* ✅ route รายละเอียดสินค้า */}
         <Route path="/product/:id" element={<ProductDetailPage />} />
+
+        {/* Checkout */}
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/receipt" element={<ReceiptPage />} />
+        <Route path="/checkout-test" element={<Checkout />} />
+
+        {/* Wallet / Orders */}
         <Route path="/wallet" element={<WalletPage />} />
         <Route path="/orders/:id" element={<OrderDetailPage />} />
+
+        {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+
+        {/* Misc */}
         <Route path="/about" element={<AboutPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
       </Routes>
+
+      {/* Drawer สำหรับ Cart */}
       <CartDrawer />
     </>
   );

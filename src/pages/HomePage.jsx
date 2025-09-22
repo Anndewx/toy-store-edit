@@ -47,7 +47,7 @@ export default function HomePage() {
 
       <div className="grid-products">
         {(loading ? skeletons : items).map((p, i) => (
-          <ProductCard key={p?.product_id || i} p={p} loading={loading} />
+          <ProductCard key={p?.product_id || i} product={p} loading={loading} />
         ))}
       </div>
     </div>

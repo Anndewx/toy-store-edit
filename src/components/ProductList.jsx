@@ -1,5 +1,6 @@
 // src/components/ProductList.jsx
 import { useEffect, useState } from 'react';
+import ProductCard from './ProductCard';
 
 export default function ProductList() {
   const [items, setItems] = useState([]);
@@ -8,13 +9,13 @@ export default function ProductList() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/products'); // ผ่าน proxy ไป 3001
+        const res = await fetch('/api/products');
         if (!res.ok) {
           setError(`โหลดสินค้าล้มเหลว (${res.status})`);
           return;
         }
         const data = await res.json();
-        setItems(data);
+        setItems(Array.isArray(data) ? data : []);
       } catch {
         setError('มีปัญหาในการเชื่อมต่อเซิร์ฟเวอร์');
       }
@@ -25,12 +26,10 @@ export default function ProductList() {
   if (!items.length) return <p>ไม่พบสินค้า</p>;
 
   return (
-    <ul>
-      {items.map(p => (
-        <li key={p.product_id || p.id}>
-          {p.name} — {p.price}
-        </li>
+    <div className="grid-products">
+      {items.map((p, i) => (
+        <ProductCard key={p?.product_id || i} product={p} />
       ))}
-    </ul>
+    </div>
   );
 }

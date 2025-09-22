@@ -1,3 +1,4 @@
+// src/context/CartContext.jsx
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   fetchCart, addToCart, updateCartQty, removeFromCart, clearCart, createOrder,
@@ -7,7 +8,7 @@ const CartCtx = createContext(null);
 export const useCart = () => useContext(CartCtx);
 
 export default function CartProvider({ children }) {
-  const [items, setItems] = useState([]);   // [{product_id, name, price, quantity, image_url}]
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
   async function refresh() {
@@ -23,37 +24,21 @@ export default function CartProvider({ children }) {
     }
   }
 
-  async function add(product_id, qty = 1) {
-    await addToCart(product_id, qty);
-    await refresh();
-  }
-
-  async function updateQty(product_id, qty) {
-    await updateCartQty(product_id, qty);
-    await refresh();
-  }
-
-  async function remove(product_id) {
-    await removeFromCart(product_id);
-    await refresh();
-  }
-
-  async function clear() {
-    await clearCart();
-    await refresh();
-  }
+  async function add(product_id, qty = 1) { await addToCart(product_id, qty); await refresh(); }
+  async function updateQty(product_id, qty) { await updateCartQty(product_id, qty); await refresh(); }
+  async function remove(product_id) { await removeFromCart(product_id); await refresh(); }
+  async function clear() { await clearCart(); await refresh(); }
 
   async function checkout() {
-    // เก็บ snapshot ไว้ทำใบเสร็จ
     const snapshot = {
       at: new Date().toISOString(),
-      items: items.map(i => ({ ...i })), // clone
+      items: items.map(i => ({ ...i })),
       subtotal: items.reduce((s, i) => s + Number(i.price) * Number(i.quantity), 0),
     };
-    const res = await createOrder(); // { ok, order_id, total }
+    const res = await createOrder();
     if (res?.ok) {
       localStorage.setItem("lastOrder", JSON.stringify({ ...snapshot, order_id: res.order_id, total: res.total }));
-      await refresh(); // backend ล้าง cart ให้แล้ว
+      await refresh();
     }
     return res;
   }
@@ -65,8 +50,13 @@ export default function CartProvider({ children }) {
     [items]
   );
 
+  const count = useMemo(
+    () => items.reduce((s, i) => s + Number(i.quantity), 0),
+    [items]
+  );
+
   return (
-    <CartCtx.Provider value={{ items, loading, subtotal, add, updateQty, remove, clear, checkout, refresh }}>
+    <CartCtx.Provider value={{ items, loading, subtotal, count, add, updateQty, remove, clear, checkout, refresh }}>
       {children}
     </CartCtx.Provider>
   );

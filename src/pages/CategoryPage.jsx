@@ -1,54 +1,72 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { fetchProducts } from "../lib/api";
 import ProductCard from "../components/ProductCard";
 
-const CATEGORY_MAP = { gundam: 3, anime: 1, superhero: 4, game: 2 };
-
-// กรณีไม่มี category_id ให้เดาจากชื่อสินค้า
-function inferCategoryIdByName(name = "") {
-  const n = name.toLowerCase();
-  if (/(gundam|sazabi|astray|strike)/.test(n)) return 3;
-  if (/(baby groot|batman|deadpool|stormtrooper|ironman|cap|shield)/.test(n)) return 4;
-  if (/(rem|asuka|izuku|midoriya|yamato)/.test(n)) return 1;
-  if (/(halo|mario|game)/.test(n)) return 2;
-  return null;
-}
-
 export default function CategoryPage() {
-  const { slug } = useParams();
+  const { slug } = useParams();           // gundam | anime | superhero | game | new | hot
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
 
   useEffect(() => {
     let alive = true;
     (async () => {
+      setLoading(true);
+      setErr("");
       try {
-        setLoading(true);
-        const all = await fetchProducts();
-        const catId = CATEGORY_MAP[slug] ?? null;
-        const withCat = all.map(p => ({
-          ...p,
-          _cat: p.category_id ?? inferCategoryIdByName(p.name),
-        }));
-        const filtered = catId ? withCat.filter(p => p._cat === catId) : all;
-        if (alive) setItems(filtered);
+        // พยายามขอจาก API ตามหมวดก่อน
+        const res = await fetch(`/api/products?category=${encodeURIComponent(slug)}`);
+        let data = [];
+        if (res.ok) {
+          data = await res.json();
+        }
+
+        // กันไว้กรณี backend ยังไม่รองรับ query ?category=
+        if (!Array.isArray(data) || data.length === 0) {
+          const all = await (await fetch("/api/products")).json();
+          const list = Array.isArray(all) ? all : [];
+
+          data =
+            slug === "new"
+              ? list
+                  .slice() // clone
+                  .sort((a, b) => new Date(b.created_at || b.id) - new Date(a.created_at || a.id))
+                  .slice(0, 24)
+              : slug === "hot"
+              ? list.filter((p) => p.is_hot === 1)
+              : list.filter(
+                  (p) =>
+                    (p.category?.toLowerCase?.() ?? "") === slug.toLowerCase() ||
+                    (p.tags ?? "").toLowerCase().includes(slug.toLowerCase())
+                );
+        }
+
+        if (alive) setItems(data);
       } catch (e) {
-        console.error(e);
-        if (alive) setItems([]);
+        console.error("Category load failed:", e);
+        if (alive) {
+          setItems([]);
+          setErr("ไม่สามารถโหลดสินค้าตามหมวดได้");
+        }
       } finally {
         if (alive) setLoading(false);
       }
     })();
-    return () => (alive = false);
+
+    return () => {
+      alive = false;
+    };
   }, [slug]);
 
   return (
     <div className="container-narrow" style={{ paddingTop: 24 }}>
-      <h2 className="mb-3 text-dark">{(slug ?? "All").toUpperCase()}</h2>
+      <h2 style={{ marginBottom: 12 }}>{slug.toUpperCase()}</h2>
+
+      {err && <div className="alert alert-warning">{err}</div>}
+
       <div className="grid-products">
         {(loading ? Array.from({ length: 8 }) : items).map((p, i) => (
-          <ProductCard key={p?.product_id || i} p={p} loading={loading} />
+          <ProductCard key={p?.product_id || i} product={p} />
         ))}
       </div>
     </div>
