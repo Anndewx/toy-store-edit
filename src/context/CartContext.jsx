@@ -29,15 +29,27 @@ export default function CartProvider({ children }) {
   async function remove(product_id) { await removeFromCart(product_id); await refresh(); }
   async function clear() { await clearCart(); await refresh(); }
 
-  async function checkout() {
+  // 🔧 UPDATED: รับ payload การชำระเงิน และส่งให้ backend
+  async function checkout(payload = {}) {
     const snapshot = {
       at: new Date().toISOString(),
       items: items.map(i => ({ ...i })),
       subtotal: items.reduce((s, i) => s + Number(i.price) * Number(i.quantity), 0),
     };
-    const res = await createOrder();
+
+    // ส่ง payload ไปกับคำสั่งซื้อ (เช่น method, ข้อมูลบัตร/โอน/COD เป็นต้น)
+    const res = await createOrder(payload);
+
     if (res?.ok) {
-      localStorage.setItem("lastOrder", JSON.stringify({ ...snapshot, order_id: res.order_id, total: res.total }));
+      localStorage.setItem(
+        "lastOrder",
+        JSON.stringify({
+          ...snapshot,
+          order_id: res.order_id,
+          total: res.total,
+          method: payload.method || "unknown",
+        })
+      );
       await refresh();
     }
     return res;
@@ -56,7 +68,9 @@ export default function CartProvider({ children }) {
   );
 
   return (
-    <CartCtx.Provider value={{ items, loading, subtotal, count, add, updateQty, remove, clear, checkout, refresh }}>
+    <CartCtx.Provider
+      value={{ items, loading, subtotal, count, add, updateQty, remove, clear, checkout, refresh }}
+    >
       {children}
     </CartCtx.Provider>
   );

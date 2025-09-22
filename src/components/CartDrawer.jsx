@@ -6,14 +6,12 @@ export default function CartDrawer() {
   const { items, subtotal, remove, updateQty, clear } = useCart();
   const [open, setOpen] = useState(false);
 
-  // ฟัง event จาก Navbar
   useEffect(() => {
     const openFn = () => setOpen(true);
     window.addEventListener("open-cart", openFn);
     return () => window.removeEventListener("open-cart", openFn);
   }, []);
 
-  // ปิดด้วย ESC
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && setOpen(false);
     window.addEventListener("keydown", onKey);
@@ -27,18 +25,21 @@ export default function CartDrawer() {
       <aside className="cd" onClick={(e) => e.stopPropagation()}>
         <header className="cd__h">
           <b>ตะกร้าสินค้า</b>
-          <button onClick={() => setOpen(false)}>✕</button>
+          <button className="cd__close" onClick={() => setOpen(false)}>✕</button>
         </header>
 
         <div className="cd__b">
           {items.length === 0 ? (
             <p>ยังไม่มีสินค้า</p>
           ) : (
-            items.map(i => (
+            items.map((i) => (
               <div className="cd__row" key={i.product_id}>
+                <img className="cd__thumb" src={i.image_url} alt={i.name} />
                 <div className="cd__grow">
                   <div className="cd__name">{i.name}</div>
-                  <div className="cd__muted">${Number(i.price).toFixed(2)} × {i.quantity}</div>
+                  <div className="cd__muted">
+                    ${Number(i.price).toFixed(2)} × {i.quantity}
+                  </div>
                 </div>
                 <div className="cd__qty">
                   <button onClick={() => updateQty(i.product_id, Math.max(1, i.quantity - 1))}>−</button>

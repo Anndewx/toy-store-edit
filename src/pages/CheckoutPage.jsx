@@ -1,66 +1,134 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useCart } from "../context/CartContext";
+import "./CheckoutPage.css";
 
 export default function CheckoutPage() {
   const { items, subtotal, checkout } = useCart();
-  const [form, setForm] = useState({ name: "", address: "", phone: "", method: "cod" });
-  const nav = useNavigate();
+  const [tab, setTab] = useState("card"); // card | bank | cod
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
 
-  const shipping = useMemo(() => (items.length > 0 ? 40 : 0), [items.length]);
-  const total = useMemo(() => subtotal + shipping, [subtotal, shipping]);
+  async function placeOrder(e) {
+    e.preventDefault();
+    setBusy(true);
+    setMsg("");
+    const form = new FormData(e.currentTarget);
+    const payload = Object.fromEntries(form.entries());
+    payload.method = tab;
 
-  const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+    const res = await checkout(payload);
+    setBusy(false);
 
-  async function placeOrder() {
-    if (items.length === 0) return nav("/");
-    const res = await checkout(); // สร้าง order จริง + เก็บ lastOrder ใน localStorage
-    if (res?.ok) nav("/receipt");
+    if (res?.ok) {
+      setMsg(`คำสั่งซื้อสำเร็จ (#${res.order_id})`);
+      window.location.href = "/receipt";
+    } else {
+      setMsg(res?.message || "ไม่สามารถทำรายการได้");
+    }
   }
 
   return (
-    <div className="container py-4" style={{ maxWidth: 960 }}>
-      <h2 className="mb-4">ชำระเงิน</h2>
-      <div className="row g-4">
-        <div className="col-lg-7">
-          <div className="card shadow-sm">
-            <div className="card-body">
-              <h5>รายการสินค้า</h5>
-              <ul className="list-group">
-                {items.map((it) => (
-                  <li key={it.product_id} className="list-group-item d-flex justify-content-between">
-                    <div>{it.name} × {it.quantity}</div>
-                    <div>${(it.price * it.quantity).toFixed(2)}</div>
-                  </li>
-                ))}
-              </ul>
-            </div>
+    <div className="co-wrap">
+      <h2>ชำระเงิน</h2>
+
+      <div className="co-grid">
+        <section className="co-left">
+          <div className="tabs">
+            <button className={tab==='card'?'active':''} onClick={() => setTab('card')}>Credit / Debit Card</button>
+            <button className={tab==='bank'?'active':''} onClick={() => setTab('bank')}>Bank Transfer</button>
+            <button className={tab==='cod'?'active':''} onClick={() => setTab('cod')}>เก็บเงินปลายทาง</button>
           </div>
-        </div>
-        <div className="col-lg-5">
-          <div className="card shadow-sm mb-3">
-            <div className="card-body">
-              <h5>ข้อมูลลูกค้า</h5>
-              <input className="form-control mb-2" placeholder="ชื่อ" name="name" value={form.name} onChange={onChange}/>
-              <input className="form-control mb-2" placeholder="ที่อยู่" name="address" value={form.address} onChange={onChange}/>
-              <input className="form-control mb-2" placeholder="โทรศัพท์" name="phone" value={form.phone} onChange={onChange}/>
-              <select className="form-select" name="method" value={form.method} onChange={onChange}>
-                <option value="cod">ชำระปลายทาง</option>
-                <option value="bank">โอนเงิน</option>
-                <option value="card">บัตรเครดิต</option>
-              </select>
-            </div>
+
+          <form className="panel" onSubmit={placeOrder}>
+            {tab === "card" && (
+              <>
+                <div className="row">
+                  <label>Card Number</label>
+                  <input name="card_number" placeholder="1234 5678 9012 3456"
+                         required pattern="^[0-9 ]{12,19}$" />
+                </div>
+                <div className="row3">
+                  <div>
+                    <label>Name on Card</label>
+                    <input name="card_name" placeholder="AKARAPON T." required />
+                  </div>
+                  <div>
+                    <label>Expiry (MM/YY)</label>
+                    <input name="card_exp" placeholder="12/27" required pattern="^(0[1-9]|1[0-2])\/\d{2}$" />
+                  </div>
+                  <div>
+                    <label>CVC</label>
+                    <input name="card_cvc" placeholder="123" required pattern="^\d{3,4}$" />
+                  </div>
+                </div>
+                <div className="row">
+                  <label>Billing Address</label>
+                  <input name="billing" placeholder="บ้านเลขที่/ถนน/แขวง/เขต" />
+                </div>
+              </>
+            )}
+
+            {tab === "bank" && (
+              <>
+                <div className="row">
+                  <label>ธนาคาร</label>
+                  <select name="bank" required>
+                    <option value="">-- เลือกธนาคาร --</option>
+                    <option>กสิกรไทย</option>
+                    <option>ไทยพาณิชย์</option>
+                    <option>กรุงไทย</option>
+                    <option>กรุงเทพ</option>
+                  </select>
+                </div>
+                <div className="row2">
+                  <div>
+                    <label>ชื่อบัญชี</label>
+                    <input name="acc_name" required />
+                  </div>
+                  <div>
+                    <label>หมายเลขบัญชี</label>
+                    <input name="acc_no" required pattern="^[0-9\-]{6,20}$" />
+                  </div>
+                </div>
+                <p className="hint">โอนแล้วแนบหลักฐานในหน้าติดตามออเดอร์ได้ภายหลัง</p>
+              </>
+            )}
+
+            {tab === "cod" && (
+              <>
+                <div className="row">
+                  <label>ที่อยู่จัดส่ง</label>
+                  <textarea name="shipping_addr" required placeholder="บ้านเลขที่ / ถนน / ตำบล / อำเภอ / จังหวัด / รหัสไปรษณีย์"></textarea>
+                </div>
+                <div className="row">
+                  <label>เบอร์ติดต่อ</label>
+                  <input name="phone" required pattern="^\d{9,10}$" />
+                </div>
+              </>
+            )}
+
+            <button className="co-pay" disabled={busy}>
+              {busy ? "กำลังทำรายการ..." : "ยืนยันชำระเงิน"}
+            </button>
+            {msg && <div className="co-msg">{msg}</div>}
+          </form>
+        </section>
+
+        <aside className="co-right">
+          <h3>สรุปรายการ</h3>
+          <ul className="co-list">
+            {items.map(i => (
+              <li key={i.product_id}>
+                <span>{i.name} × {i.quantity}</span>
+                <b>${(Number(i.price)*Number(i.quantity)).toFixed(2)}</b>
+              </li>
+            ))}
+          </ul>
+          <div className="co-total">
+            <span>ยอดรวม</span>
+            <b>${subtotal.toFixed(2)}</b>
           </div>
-          <div className="card shadow-sm">
-            <div className="card-body">
-              <div className="d-flex justify-content-between"><span>ยอดสินค้า</span><span>${subtotal.toFixed(2)}</span></div>
-              <div className="d-flex justify-content-between"><span>ค่าจัดส่ง</span><span>${shipping.toFixed(2)}</span></div>
-              <hr />
-              <div className="d-flex justify-content-between fw-bold"><span>รวม</span><span>${total.toFixed(2)}</span></div>
-              <button className="btn btn-warning text-dark w-100 mt-3" onClick={placeOrder}>ยืนยันสั่งซื้อ</button>
-            </div>
-          </div>
-        </div>
+        </aside>
       </div>
     </div>
   );
