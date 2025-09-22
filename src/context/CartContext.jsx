@@ -1,4 +1,3 @@
-// src/context/CartContext.jsx
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   fetchCart, addToCart, updateCartQty, removeFromCart, clearCart, createOrder,
@@ -29,7 +28,7 @@ export default function CartProvider({ children }) {
   async function remove(product_id) { await removeFromCart(product_id); await refresh(); }
   async function clear() { await clearCart(); await refresh(); }
 
-  // 🔧 UPDATED: รับ payload การชำระเงิน และส่งให้ backend
+  // ✅ โหมดจริง + โหมดจำลอง (เดโม)
   async function checkout(payload = {}) {
     const snapshot = {
       at: new Date().toISOString(),
@@ -37,22 +36,46 @@ export default function CartProvider({ children }) {
       subtotal: items.reduce((s, i) => s + Number(i.price) * Number(i.quantity), 0),
     };
 
-    // ส่ง payload ไปกับคำสั่งซื้อ (เช่น method, ข้อมูลบัตร/โอน/COD เป็นต้น)
-    const res = await createOrder(payload);
-
-    if (res?.ok) {
-      localStorage.setItem(
-        "lastOrder",
-        JSON.stringify({
+    // 1) พยายามยิง API จริงก่อน
+    try {
+      const res = await createOrder(payload);
+      if (res?.ok) {
+        localStorage.setItem("lastOrder", JSON.stringify({
           ...snapshot,
           order_id: res.order_id,
           total: res.total,
           method: payload.method || "unknown",
-        })
-      );
-      await refresh();
+          payload, // เก็บข้อมูล (ไว้โชว์ในใบเสร็จ)
+        }));
+        await refresh();
+        return res;
+      }
+    } catch (e) {
+      // ผ่านไปใช้โหมดจำลอง
+      console.warn("createOrder failed, fallback to demo mode:", e);
     }
-    return res;
+
+    // 2) โหมดจำลอง (เดโม) — ไม่ต้องติดต่อเซิร์ฟเวอร์ก็มีใบเสร็จ
+    const demoRes = {
+      ok: true,
+      order_id: `SIM-${Date.now().toString().slice(-6)}`,
+      total: snapshot.subtotal,
+    };
+
+    localStorage.setItem("lastOrder", JSON.stringify({
+      ...snapshot,
+      order_id: demoRes.order_id,
+      total: demoRes.total,
+      method: payload.method || "demo",
+      payload,
+      demo: true,
+    }));
+
+    // เคลียร์ตะกร้าแบบ local ให้ฟีลสะอาดตา
+    try { await clearCart(); } catch {}
+    await refresh();
+
+    return demoRes;
   }
 
   useEffect(() => { refresh(); }, []);
@@ -61,7 +84,6 @@ export default function CartProvider({ children }) {
     () => items.reduce((s, i) => s + Number(i.price) * Number(i.quantity), 0),
     [items]
   );
-
   const count = useMemo(
     () => items.reduce((s, i) => s + Number(i.quantity), 0),
     [items]

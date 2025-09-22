@@ -44,26 +44,25 @@ export default function CheckoutPage() {
               <>
                 <div className="row">
                   <label>Card Number</label>
-                  <input name="card_number" placeholder="1234 5678 9012 3456"
-                         required pattern="^[0-9 ]{12,19}$" />
+                  <input name="card_number" placeholder="ใส่อะไรก็ได้ในโหมดเดโม" />
                 </div>
                 <div className="row3">
                   <div>
                     <label>Name on Card</label>
-                    <input name="card_name" placeholder="AKARAPON T." required />
+                    <input name="card_name" placeholder="ใส่อะไรก็ได้" />
                   </div>
                   <div>
                     <label>Expiry (MM/YY)</label>
-                    <input name="card_exp" placeholder="12/27" required pattern="^(0[1-9]|1[0-2])\/\d{2}$" />
+                    <input name="card_exp" placeholder="12/27" />
                   </div>
                   <div>
                     <label>CVC</label>
-                    <input name="card_cvc" placeholder="123" required pattern="^\d{3,4}$" />
+                    <input name="card_cvc" placeholder="123" />
                   </div>
                 </div>
                 <div className="row">
                   <label>Billing Address</label>
-                  <input name="billing" placeholder="บ้านเลขที่/ถนน/แขวง/เขต" />
+                  <input name="billing" placeholder="ที่อยู่เรียกเก็บเงิน (ไม่บังคับ)" />
                 </div>
               </>
             )}
@@ -72,8 +71,8 @@ export default function CheckoutPage() {
               <>
                 <div className="row">
                   <label>ธนาคาร</label>
-                  <select name="bank" required>
-                    <option value="">-- เลือกธนาคาร --</option>
+                  <select name="bank" defaultValue="">
+                    <option value="">(เดโม) เลือกธนาคารอะไรก็ได้</option>
                     <option>กสิกรไทย</option>
                     <option>ไทยพาณิชย์</option>
                     <option>กรุงไทย</option>
@@ -83,14 +82,14 @@ export default function CheckoutPage() {
                 <div className="row2">
                   <div>
                     <label>ชื่อบัญชี</label>
-                    <input name="acc_name" required />
+                    <input name="acc_name" placeholder="ใส่อะไรก็ได้" />
                   </div>
                   <div>
                     <label>หมายเลขบัญชี</label>
-                    <input name="acc_no" required pattern="^[0-9\-]{6,20}$" />
+                    <input name="acc_no" placeholder="123-456-7890" />
                   </div>
                 </div>
-                <p className="hint">โอนแล้วแนบหลักฐานในหน้าติดตามออเดอร์ได้ภายหลัง</p>
+                <p className="hint">โหมดเดโม: ไม่ต้องแนบสลิปจริง กดยืนยันเพื่อรับใบเสร็จได้</p>
               </>
             )}
 
@@ -98,11 +97,11 @@ export default function CheckoutPage() {
               <>
                 <div className="row">
                   <label>ที่อยู่จัดส่ง</label>
-                  <textarea name="shipping_addr" required placeholder="บ้านเลขที่ / ถนน / ตำบล / อำเภอ / จังหวัด / รหัสไปรษณีย์"></textarea>
+                  <textarea name="shipping_addr" placeholder="ที่อยู่ปลายทาง (ใส่อะไรก็ได้ในเดโม)"></textarea>
                 </div>
                 <div className="row">
                   <label>เบอร์ติดต่อ</label>
-                  <input name="phone" required pattern="^\d{9,10}$" />
+                  <input name="phone" placeholder="เบอร์สำหรับติดต่อ (ไม่ตรวจเข้มในเดโม)" />
                 </div>
               </>
             )}

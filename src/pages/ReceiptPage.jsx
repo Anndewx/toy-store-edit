@@ -1,48 +1,57 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import "./ReceiptPage.css";
+
+function mask(s = "", left = 4, right = 2) {
+  const str = String(s).replace(/\s/g, "");
+  if (str.length <= left + right) return "****";
+  return str.slice(0, left) + "****".repeat(3) + str.slice(-right);
+}
 
 export default function ReceiptPage() {
-  const [order, setOrder] = useState(null);
+  const raw = (typeof window !== "undefined" && localStorage.getItem("lastOrder")) || "{}";
+  const order = JSON.parse(raw || "{}");
 
-  useEffect(() => {
-    const raw = localStorage.getItem("lastOrder");
-    if (raw) setOrder(JSON.parse(raw));
-  }, []);
-
-  if (!order) {
+  if (!order?.order_id) {
     return (
-      <div className="container py-4">
-        <h3 className="mb-3">ไม่พบใบเสร็จล่าสุด</h3>
-        <Link to="/" className="btn btn-dark">กลับหน้าหลัก</Link>
+      <div className="rcp">
+        <h2>ไม่พบใบเสร็จ</h2>
+        <p>กรุณาทำรายการสั่งซื้อใหม่อีกครั้ง</p>
       </div>
     );
   }
 
+  const method = (order.method || "unknown").toUpperCase();
+  const pay = order.payload || {};
+  const cardMasked = pay.card_number ? mask(pay.card_number) : null;
+
   return (
-    <div className="container py-4" style={{ maxWidth: 820 }}>
-      <div className="card shadow-sm">
-        <div className="card-body">
-          <h3 className="mb-2">ใบเสร็จรับเงิน</h3>
-          <div className="text-muted mb-3">คำสั่งซื้อเลขที่ #{order.order_id} • {new Date(order.at).toLocaleString()}</div>
+    <div className="rcp">
+      <div className="rcp__box">
+        <h2>ใบเสร็จรับเงิน</h2>
+        {order.demo && <div className="rcp__tag">DEMO</div>}
+        <div className="rcp__row"><span>หมายเลขใบเสร็จ</span><b>#{order.order_id}</b></div>
+        <div className="rcp__row"><span>วันที่</span><b>{new Date(order.at).toLocaleString()}</b></div>
+        <div className="rcp__row"><span>วิธีชำระเงิน</span><b>{method}</b></div>
+        {cardMasked && <div className="rcp__row"><span>หมายเลขบัตร</span><b>{cardMasked}</b></div>}
 
-          <ul className="list-group mb-3">
-            {order.items.map((it) => (
-              <li key={it.product_id} className="list-group-item d-flex justify-content-between">
-                <div>{it.name} × {it.quantity}</div>
-                <div>${(it.price * it.quantity).toFixed(2)}</div>
-              </li>
-            ))}
-          </ul>
-
-          <div className="d-flex justify-content-between fw-bold">
-            <span>รวมทั้งสิ้น</span>
-            <span>${Number(order.total ?? order.subtotal).toFixed(2)}</span>
+        <div className="rcp__table">
+          <div className="rcp__thead"><span>รายการ</span><span>จำนวน</span><span>ราคา</span></div>
+          {order.items?.map((i) => (
+            <div className="rcp__tr" key={i.product_id}>
+              <span>{i.name}</span>
+              <span>{i.quantity}</span>
+              <span>${(Number(i.price)*Number(i.quantity)).toFixed(2)}</span>
+            </div>
+          ))}
+          <div className="rcp__tfoot">
+            <span>ยอดรวม</span>
+            <span />
+            <b>${Number(order.total || order.subtotal || 0).toFixed(2)}</b>
           </div>
+        </div>
 
-          <div className="mt-3 d-flex gap-2">
-            <button className="btn btn-outline-secondary" onClick={() => window.print()}>พิมพ์/บันทึก PDF</button>
-            <Link to="/" className="btn btn-dark">กลับไปช้อปต่อ</Link>
-          </div>
+        <div className="rcp__actions">
+          <a href="/" className="rcp__btn">กลับหน้าแรก</a>
+          <button className="rcp__btn ghost" onClick={() => window.print()}>พิมพ์</button>
         </div>
       </div>
     </div>
