@@ -1,54 +1,50 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { THB } from "../lib/utils";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
-export default function ReceiptPage(){
-  const { id } = useParams();
-  const [data, setData] = useState(null);
+export default function ReceiptPage() {
+  const [order, setOrder] = useState(null);
 
-  useEffect(()=>{
-    (async()=>{
-      const res = await fetch(`http://localhost:3006/api/orders/${id}`);
-      if (res.ok) setData(await res.json());
-    })();
-  },[id]);
+  useEffect(() => {
+    const raw = localStorage.getItem("lastOrder");
+    if (raw) setOrder(JSON.parse(raw));
+  }, []);
 
-  if (!data) return <div className="hp-container" style={{padding:"32px 0"}}>กำลังโหลด...</div>;
-
-  const { order, items } = data;
+  if (!order) {
+    return (
+      <div className="container py-4">
+        <h3 className="mb-3">ไม่พบใบเสร็จล่าสุด</h3>
+        <Link to="/" className="btn btn-dark">กลับหน้าหลัก</Link>
+      </div>
+    );
+  }
 
   return (
-    <main className="hp-wrap">
-      <div className="hp-container">
-        <div className="card" style={{padding:16}}>
-          <div className="row">
-            <h2 className="grow">ใบเสร็จ #{order.id}</h2>
-            <button className="btn" onClick={()=>window.print()}>พิมพ์ / บันทึกเป็น PDF</button>
+    <div className="container py-4" style={{ maxWidth: 820 }}>
+      <div className="card shadow-sm">
+        <div className="card-body">
+          <h3 className="mb-2">ใบเสร็จรับเงิน</h3>
+          <div className="text-muted mb-3">คำสั่งซื้อเลขที่ #{order.order_id} • {new Date(order.at).toLocaleString()}</div>
+
+          <ul className="list-group mb-3">
+            {order.items.map((it) => (
+              <li key={it.product_id} className="list-group-item d-flex justify-content-between">
+                <div>{it.name} × {it.quantity}</div>
+                <div>${(it.price * it.quantity).toFixed(2)}</div>
+              </li>
+            ))}
+          </ul>
+
+          <div className="d-flex justify-content-between fw-bold">
+            <span>รวมทั้งสิ้น</span>
+            <span>${Number(order.total ?? order.subtotal).toFixed(2)}</span>
           </div>
-          <div className="row">
-            <div className="grow">
-              <div><b>ลูกค้า:</b> {order.customer_name}</div>
-              <div className="muted">{order.email} · {order.phone}</div>
-              <div>{order.address}</div>
-            </div>
-            <div>
-              <div><b>วันที่:</b> {new Date(order.created_at).toLocaleString("th-TH")}</div>
-            </div>
-          </div>
-          <hr/>
-          {items.map(it=>(
-            <div className="row" key={it.id}>
-              <div className="grow">{it.name} × {it.qty}</div>
-              <div>{THB.format(it.price * it.qty)}</div>
-            </div>
-          ))}
-          <hr/>
-          <div className="row total">
-            <div className="grow">ยอดรวม</div>
-            <div>{THB.format(order.total)}</div>
+
+          <div className="mt-3 d-flex gap-2">
+            <button className="btn btn-outline-secondary" onClick={() => window.print()}>พิมพ์/บันทึก PDF</button>
+            <Link to="/" className="btn btn-dark">กลับไปช้อปต่อ</Link>
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

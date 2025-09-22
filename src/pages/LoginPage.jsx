@@ -1,9 +1,9 @@
 import { useState } from "react";
-
-const API = import.meta.env.VITE_API_BASE || "http://localhost:3006/api";
+import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
-  const [form, setForm] = useState({ email: "", password: "" });
+  const { login } = useAuth();
+  const [form, setForm] = useState({ usernameOrEmail: "", password: "" });
   const [msg, setMsg] = useState("");
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -12,29 +12,24 @@ export default function LoginPage() {
     e.preventDefault();
     setMsg("");
     try {
-      const res = await fetch(`${API}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || "Login failed");
-      localStorage.setItem("token", data.token);
-      setMsg("ล็อกอินสำเร็จ ✔");
+      await login(form);
+      setMsg("เข้าสู่ระบบสำเร็จ ✔");
     } catch (err) {
-      setMsg(err.message);
+      setMsg(err.message || "Login failed");
     }
   };
 
   return (
-    <div className="container-narrow">
-      <h2 className="mb-3">เข้าสู่ระบบ</h2>
-      <form onSubmit={onSubmit} className="d-flex flex-column gap-2" style={{ maxWidth: 420 }}>
-        <input className="form-control" placeholder="อีเมล" name="email" value={form.email} onChange={onChange} />
-        <input className="form-control" placeholder="รหัสผ่าน" type="password" name="password" value={form.password} onChange={onChange} />
-        <button className="btn btn-dark mt-2" type="submit">เข้าสู่ระบบ</button>
-        {msg && <div className="mt-2">{msg}</div>}
-      </form>
+    <div className="d-flex justify-content-center align-items-center" style={{ minHeight:"80vh" }}>
+      <div className="card shadow p-4" style={{ width: 420, borderRadius: 16 }}>
+        <h3 className="text-center mb-3">เข้าสู่ระบบ</h3>
+        <form onSubmit={onSubmit} className="d-flex flex-column gap-3">
+          <input className="form-control" placeholder="Username หรือ Email" name="usernameOrEmail" value={form.usernameOrEmail} onChange={onChange}/>
+          <input className="form-control" placeholder="รหัสผ่าน" type="password" name="password" value={form.password} onChange={onChange}/>
+          <button className="btn btn-warning text-dark fw-bold" type="submit">เข้าสู่ระบบ</button>
+          {msg && <div className="alert alert-info">{msg}</div>}
+        </form>
+      </div>
     </div>
   );
 }

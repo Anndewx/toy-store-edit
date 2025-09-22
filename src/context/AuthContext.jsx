@@ -1,41 +1,56 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import { post } from "../lib/api";
 
-const Ctx = createContext(null);
-export const useAuth = () => useContext(Ctx);
+const AuthCtx = createContext(null);
+export const useAuth = () => useContext(AuthCtx);
 
-const LS = "ct_auth_v1";
+export default function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
 
-export default function AuthProvider({ children }){
-  const [token,setToken] = useState(()=>localStorage.getItem(LS) || "");
-  const [user,setUser] = useState(()=> token ? JSON.parse(localStorage.getItem(LS+"_user")||"null") : null);
+  useEffect(() => {
+    const t = localStorage.getItem("token");
+    const u = localStorage.getItem("user");
+    if (t) setToken(t);
+    if (u) setUser(JSON.parse(u));
+  }, []);
 
-  useEffect(()=>{
-    if (token) localStorage.setItem(LS, token);
-    else localStorage.removeItem(LS);
-    if (user) localStorage.setItem(LS+"_user", JSON.stringify(user));
-    else localStorage.removeItem(LS+"_user");
-  },[token,user]);
+  function setSession(t, u) {
+    if (t) localStorage.setItem("token", t);
+    if (u) localStorage.setItem("user", JSON.stringify(u));
+    setToken(t);
+    setUser(u);
+  }
 
-  const login = async (username, password)=>{
-    const res = await fetch("http://localhost:3006/api/auth/login", {
-      method:"POST", headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ username, password })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "login failed");
-    setToken(data.token); setUser(data.user);
-  };
+  // ★ รับ usernameOrEmail → แปลงเป็น {username} หรือ {email}
+  async function login({ usernameOrEmail, password }) {
+    const body =
+      usernameOrEmail?.includes("@")
+        ? { email: usernameOrEmail, password }
+        : { username: usernameOrEmail, password };
+    const data = await post("/auth/login", body); // {ok, user, token}
+    if (!data.ok) throw new Error(data.error || "Login failed");
+    setSession(data.token, data.user);
+    return data;
+  }
 
-  const register = async (username, email, password)=>{
-    const res = await fetch("http://localhost:3006/api/auth/register", {
-      method:"POST", headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ username, email, password })
-    });
-    if (!res.ok) throw new Error((await res.json()).message || "register failed");
-    // สมัครเสร็จ -> ให้ login ต่อเอง
-  };
+  async function register({ name, email, password }) {
+    const data = await post("/auth/register", { name, email, password });
+    if (!data.ok) throw new Error(data.error || "Register failed");
+    setSession(data.token, data.user);
+    return data;
+  }
 
-  const logout = ()=>{ setToken(""); setUser(null); };
+  function logout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setToken(null);
+    setUser(null);
+  }
 
-  return <Ctx.Provider value={{ token, user, login, register, logout }}>{children}</Ctx.Provider>;
+  return (
+    <AuthCtx.Provider value={{ user, token, login, register, logout }}>
+      {children}
+    </AuthCtx.Provider>
+  );
 }
