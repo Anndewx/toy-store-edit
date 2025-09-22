@@ -10,11 +10,12 @@ import SearchPage from "./pages/SearchPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import AboutPage from "./pages/AboutPage";
-import DashboardPage from "./pages/DashboardPage";
 import WalletPage from "./pages/WalletPage";
 import OrderDetailPage from "./pages/OrderDetailPage";
 import CartDrawer from "./components/CartDrawer";
 import Checkout from "./pages/Checkout";
+import AnalyticsDashboard from "./pages/AnalyticsDashboard.jsx";
+import Footer from "./components/Footer";
 
 export default function App() {
   return (
@@ -45,11 +46,15 @@ export default function App() {
 
         {/* Misc */}
         <Route path="/about" element={<AboutPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/dashboard" element={<AnalyticsDashboard />} />
       </Routes>
 
       {/* Drawer สำหรับ Cart */}
       <CartDrawer />
+    
+{/* Footer */}
+      <Footer />
     </>
   );
 }
+
